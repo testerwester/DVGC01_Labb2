@@ -353,8 +353,6 @@
       (synerr1 state 'ID))
    
    (match state 'ASSIGN)
-
-
    (stat_expr state)
 )
 
@@ -399,7 +397,7 @@
       ((compLookahead state 'INTEGER) (match state 'INTEGER))
       ((compLookahead state 'BOOLEAN) (match state 'BOOLEAN))
       ((compLookahead state 'REAL) (match state 'REAL))
-      (t    (synerr2 state)) ;;Base case when no datatype found. ADD error to symbol table
+      (t    (synerr2 state)) 
    )
 )
 
@@ -429,7 +427,6 @@
 
 (defun var-dec-list (state)
    (var-dec state)
-
    ;; If another row of var dec
    (if (compLookahead state 'ID) (var-dec-list state)) 
 
@@ -479,7 +476,6 @@
 (defun check-end (state)
    (if (not (compLookahead state 'EOF))
       (parse-eof state))
-
 )
 
 ;;=====================================================================
@@ -516,6 +512,7 @@
 ;; - Amazing automated function that locates all testfiles in subdir and runs them
 ;; - The boring part is that it's not so amazing and doesn't sort the files correctly or run them in DFR's order
 (parse-all-special)
+;; - NOTE Parse-all-special and its sub-functions were created together with Caj Lokkin and George Newbury
 
 )
 
@@ -523,22 +520,35 @@
 ; THE PARSER - test all files
 ;;=====================================================================
 
-;;Locates all *.pas files in dir "string" returns a list of (ish) sorted, string paths
-(defun getAllTestfiles (string)
-   ;;locates all pathnames in string directory
-   (setf allFiles(directory string))
-
-   ;;converts pathnames to strings
-   (setf allStrings(mapcar #'namestring allFiles))
-
-   ;;sorts and returns a list of string paths
-   (setf sorted (sort allStrings #'string-lessp))
+;;Locates all namepaths according to input string, converts them to namestrings, and returns a sorted list of these values
+(defun getFileNames (string)
+   (sort (mapcar #'namestring (directory string)) #'string-lessp)
 )
 
+;;Driver function to parse different filetypes
 (defun parse-all-special()
-   (setf path "testfiles/*.pas") ;;Change this path for different subfolders
-   (mapcar #'parse (getAllTestfiles path))
+   (mapcar #'parse (append 
+   (filterDigits (getFileNames "testfiles/test?.pas") '4) ;;Collects all test'X' test files
+      (getFileNames "testfiles/testok?.pas")       ;;Collects all testok test files
+      (getFileNames "testfiles/fun?.pas")          ;;Collects all fun test files
+      (getFileNames "testfiles/sem?.pas"))         ;;Collects all sem test files
+   )
 )
+
+;;Function that filters out namestrings with digits on the Nth index in string. Returns filtered list
+(defun filterDigits (lista n)
+   (if (digit-char-p (char (reverse (first lista)) n))
+      (filterDigits (nthcdr 1 lista) n)
+      (setf returlist lista)
+   )
+)
+
+;;=====================================================================
+; THE PARSER - test a single file
+;;=====================================================================
+
+   
+   ;(mapcar #'parse (setf test_single (directory "testfiles/test?.pas")))
 
 
 
